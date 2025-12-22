@@ -13,7 +13,7 @@ This will:
 #>
 
 param(
-    [string]$VenvPath = './venv',
+    [string]$VenvPath = './.venv',
     [string]$Requirements = './requirements.txt'
 )
 
@@ -21,7 +21,8 @@ Write-Host "Creating virtual environment at $VenvPath ..."
 python -m venv $VenvPath
 
 Write-Host "Activating virtual environment..."
-. "$PSScriptRoot/../venv/Scripts/Activate.ps1"
+$venvFullPath = Resolve-Path $VenvPath
+. (Join-Path $venvFullPath "Scripts/Activate.ps1")
 
 Write-Host "Upgrading pip..."
 python -m pip install --upgrade pip setuptools wheel

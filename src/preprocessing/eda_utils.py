@@ -1,9 +1,11 @@
-"""Reusable EDA utilities for missingness, cardinality, and outlier checks."""
+"""Reusable EDA utilities for missingness, cardinality, correlations and helpers."""
 
 from __future__ import annotations
 
+from typing import List, Optional, Sequence
+
+import numpy as np
 import pandas as pd
-from typing import List
 
 
 def missingness_summary(df: pd.DataFrame) -> pd.DataFrame:
@@ -67,6 +69,90 @@ def class_balance(df: pd.DataFrame, candidates: List[str]) -> pd.DataFrame:
     )
 
 
+def compute_target_correlations(
+    df: pd.DataFrame,
+    target: str,
+    exclude: Optional[Sequence[str]] = None,
+) -> pd.DataFrame:
+    """Compute Pearson correlation of each numeric feature to binary `target`.
+
+    Returns a DataFrame with columns ['feature', 'corr', 'abs_corr'] sorted by |corr| desc.
+    """
+    if target not in df.columns:
+        return pd.DataFrame(columns=["feature", "corr", "abs_corr"])  # empty
+
+    exclude = set(exclude or []) | {target}
+    num_cols = df.select_dtypes(include=[np.number]).columns
+    cand = [c for c in num_cols if c not in exclude]
+    if not cand:
+        return pd.DataFrame(columns=["feature", "corr", "abs_corr"])  # empty
+
+    corr_series = df[cand + [target]].corr(numeric_only=True)[target].drop(labels=[target])
+    out = (
+        corr_series.to_frame("corr")
+        .assign(abs_corr=lambda d: d["corr"].abs())
+        .sort_values("abs_corr", ascending=False)
+        .reset_index()
+        .rename(columns={"index": "feature"})
+    )
+    return out
+
+
+def correlation_matrix(df: pd.DataFrame, columns: Sequence[str]) -> pd.DataFrame:
+    """Return correlation matrix for given columns (numeric-only)."""
+    use_cols = [c for c in columns if c in df.columns]
+    if not use_cols:
+        return pd.DataFrame()
+    return df[use_cols].corr(numeric_only=True)
+
+
+def add_log1p_column(df: pd.DataFrame, column: str, new_name: Optional[str] = None) -> pd.DataFrame:
+    """Return a copy with log1p(column) as new column.
+
+    If new_name is None, defaults to f"{column}_log1p".
+    """
+    if column not in df.columns:
+        return df.copy()
+    new_name = new_name or f"{column}_log1p"
+    series = pd.to_numeric(df[column], errors="coerce")
+    return df.assign(**{new_name: np.log1p(series)})
+
+
+def duplicates_count(df: pd.DataFrame) -> int:
+    """Count fully duplicated rows in a DataFrame."""
+    return int(df.duplicated().sum())
+
+
+def dtypes_frame(df: pd.DataFrame, max_rows: Optional[int] = None) -> pd.DataFrame:
+    """Return a DataFrame of dtypes; optionally head(max_rows)."""
+    out = df.dtypes.astype(str).to_frame("dtype").reset_index().rename(columns={"index": "column"})
+    return out if max_rows is None else out.head(max_rows)
+
+
+def sample_df(df: pd.DataFrame, n: int, random_state: int = 42) -> pd.DataFrame:
+    """Safe sampling helper capped by length."""
+    n_eff = min(n, len(df))
+    return df.sample(n=n_eff, random_state=random_state) if len(df) > 0 else df
+
+
+def describe_by_class(
+    df: pd.DataFrame,
+    class_col: str,
+    columns: Sequence[str],
+    percentiles: Sequence[float] | None = (0.5, 0.9, 0.99),
+) -> pd.DataFrame:
+    """Return descriptive stats for `columns` grouped by `class_col` with optional percentiles."""
+    use_cols = [c for c in columns if c in df.columns]
+    if class_col not in df.columns or not use_cols:
+        return pd.DataFrame()
+    desc = (
+        df[use_cols + [class_col]]
+        .groupby(class_col)[use_cols]
+        .describe(percentiles=list(percentiles) if percentiles else None)
+    )
+    return desc
+
+
 __all__ = [
     "missingness_summary",
     "top_frequencies",
@@ -74,4 +160,11 @@ __all__ = [
     "constant_columns",
     "cardinality_report",
     "class_balance",
+    "compute_target_correlations",
+    "correlation_matrix",
+    "add_log1p_column",
+    "duplicates_count",
+    "dtypes_frame",
+    "sample_df",
+    "describe_by_class",
 ]

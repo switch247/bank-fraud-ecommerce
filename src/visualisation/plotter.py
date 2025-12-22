@@ -105,3 +105,47 @@ class Plotter:
         # rotate x tick labels if long
         plt.xticks(rotation=45)
         self._finalize(title or "Correlation Heatmap", None, None)
+
+    def plot_density_by_class(
+        self,
+        df: pd.DataFrame,
+        x: str,
+        class_col: str,
+        title: Optional[str] = None,
+        xlabel: Optional[str] = None,
+        ylabel: Optional[str] = None,
+        bw_adjust: float = 1.0,
+        fill: bool = True,
+        alpha: float = 0.4,
+    ) -> None:
+        """Density plot (KDE) of feature `x` split by binary `class_col`.
+
+        Parameters
+        - df: DataFrame with data
+        - x: feature/column to plot
+        - class_col: binary class column (0/1)
+        - title/xlabel/ylabel: optional labels
+        - bw_adjust: KDE bandwidth adjustment
+        - fill/alpha: area fill options
+        """
+        if x not in df.columns or class_col not in df.columns:
+            print(f"Columns not found for density plot: x='{x}', class_col='{class_col}'")
+            return
+
+        series = pd.to_numeric(df[x], errors="coerce")
+        local_df = df.assign(**{x: series}).dropna(subset=[x, class_col])
+        if local_df.empty:
+            print(f"No valid data to plot density for '{x}' by '{class_col}'.")
+            return
+
+        plt.figure()
+        sns.kdeplot(
+            data=local_df,
+            x=x,
+            hue=class_col,
+            common_norm=False,
+            fill=fill,
+            alpha=alpha,
+            bw_adjust=bw_adjust,
+        )
+        self._finalize(title or f"Density by {class_col}: {x}", xlabel or x, ylabel or "Density")

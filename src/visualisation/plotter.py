@@ -1,0 +1,107 @@
+"""Plotting utility with auto-save and inline display."""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import Optional
+
+import pandas as pd
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from src.config.settings import settings
+
+
+class Plotter:
+    """Lightweight plotting helpers for notebooks and scripts.
+
+    - Always displays plots inline.
+    - Automatically saves PNG files to the configured figures directory using a slugified title.
+    - Caller only needs to pass the title; no manual paths.
+    """
+
+    def __init__(self, figures_dir: Optional[Path] = None):
+        sns.set_theme(style="whitegrid")
+        plt.rcParams["figure.figsize"] = (10, 6)
+        self.figures_dir = Path(figures_dir) if figures_dir else settings.figures_dir
+        self.figures_dir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _slugify(title: str) -> str:
+        slug = re.sub(r"[^a-zA-Z0-9]+", "_", title.strip()).strip("_").lower()
+        return slug or "figure"
+
+    def _finalize(self, title: str | None, xlabel: str | None, ylabel: str | None):
+        if title:
+            plt.title(title)
+        if xlabel:
+            plt.xlabel(xlabel)
+        if ylabel:
+            plt.ylabel(ylabel)
+        plt.tight_layout()
+
+        if title:
+            filename = f"{self._slugify(title)}.png"
+            out_path = self.figures_dir / filename
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(out_path, dpi=300)
+
+        plt.show()
+        plt.close()
+
+    def plot_histogram(self, df, column, title=None, xlabel=None, ylabel="Count", bins=20, log_scale=False):
+        """Plot and save a histogram with KDE; coerces to numeric and drops NaNs."""
+        series = pd.to_numeric(df[column], errors="coerce").dropna()
+        if series.empty:
+            print(f"No numeric data available to plot for column '{column}'.")
+            return
+
+        plt.figure()
+        sns.histplot(series, bins=bins, kde=True)
+        if log_scale:
+            plt.xscale("symlog")
+        self._finalize(title or f"Distribution of {column}", xlabel or column, ylabel)
+
+    def plot_bar(self, df, x, y, title=None, xlabel=None, ylabel=None):
+        """Plot and save a bar chart."""
+        plt.figure()
+        sns.barplot(data=df, x=x, y=y)
+        plt.xticks(rotation=45)
+        self._finalize(title or f"{y} by {x}", xlabel or x, ylabel or y)
+
+    def plot_time_series(self, df, date_col, value_col, title=None, xlabel=None, ylabel=None):
+        """Plot and save a time series line chart."""
+        plt.figure()
+        sns.lineplot(data=df, x=date_col, y=value_col, marker="o")
+        plt.xticks(rotation=45)
+        self._finalize(title or f"{value_col} over Time", xlabel or date_col, ylabel or value_col)
+
+    def plot_box(self, df, y, x=None, title=None, xlabel=None, ylabel=None):
+        """Plot and save a boxplot (optionally grouped by x)."""
+        plt.figure()
+        sns.boxplot(data=df, x=x, y=y)
+        plt.xticks(rotation=45)
+        self._finalize(title or f"Distribution of {y}", xlabel or (x if x else ""), ylabel or y)
+
+    def plot_heatmap(self, corr_mat: pd.DataFrame, title: str | None = None, cmap: str = "coolwarm",
+                     center: Optional[float] = 0, square: bool = True, annot: bool = False,
+                     figsize: tuple = (8, 6)):
+        """Plot and save a correlation-style heatmap from a square DataFrame.
+
+        Parameters
+        - corr_mat: square DataFrame of pairwise values (e.g., correlations)
+        - title: optional title used for display and filename
+        - cmap, center, square, annot: forwarded to seaborn.heatmap
+        - figsize: matplotlib figure size tuple
+        """
+        if corr_mat is None or corr_mat.empty:
+            print("No matrix provided for heatmap.")
+            return
+
+        plt.figure(figsize=figsize)
+        sns.heatmap(corr_mat, cmap=cmap, center=center, square=square, annot=annot)
+        # rotate x tick labels if long
+        plt.xticks(rotation=45)
+        self._finalize(title or "Correlation Heatmap", None, None)

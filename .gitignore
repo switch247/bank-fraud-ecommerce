@@ -25,3 +25,5 @@ walkthrough.md*
 /logs/
 .env*
 /mlruns/
+/outputs/
+.DS_Store

@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import pandas as pd
 import mlflow
+from imblearn.over_sampling import SMOTE
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,25 @@ def main():
         df, target="Class", drop_cols=drop_cols, test_size=0.2, random_state=42, stratify=True
     )
 
+    # Print class distribution before resampling (train split only)
+    train_dist = y_train.value_counts().sort_index()
+    train_pct = (y_train.value_counts(normalize=True).sort_index() * 100).round(3)
+    print("Training class distribution BEFORE resampling:")
+    print({int(k): int(v) for k, v in train_dist.items()})
+    print({int(k): float(v) for k, v in train_pct.items()})
+
+    # Apply SMOTE only on the training split to handle class imbalance
+    # Note: SMOTE operates on numeric features; creditcard.csv features are numeric.
+    smote = SMOTE(random_state=42)
+    X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
+
+    # Print class distribution after resampling
+    res_dist = y_train_res.value_counts().sort_index()
+    res_pct = (y_train_res.value_counts(normalize=True).sort_index() * 100).round(3)
+    print("Training class distribution AFTER SMOTE resampling:")
+    print({int(k): int(v) for k, v in res_dist.items()})
+    print({int(k): float(v) for k, v in res_pct.items()})
+
     # Determine columns for preprocessor
     # For creditcard.csv everything except target is numeric
     numeric_cols = X_train.select_dtypes(include=["number"]).columns.tolist()
@@ -67,12 +87,13 @@ def main():
         elif "xgb" in model_name:
             param_grid = {"model__n_estimators": [200, 400], "model__learning_rate": [0.05, 0.1]}
 
+        # Include resampling info in run name for traceability
         run_experiment(
             experiment_name=experiment_name,
-            model_name=model_name,
+            model_name=f"{model_name}__smote",
             model=model_pipeline,
-            X_train=X_train,
-            y_train=y_train,
+            X_train=X_train_res,
+            y_train=y_train_res,
             X_test=X_test,
             y_test=y_test,
             param_grid=param_grid,

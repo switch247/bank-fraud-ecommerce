@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import pandas as pd
 import mlflow
+from imblearn.over_sampling import SMOTENC
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -67,6 +68,26 @@ def main():
     numeric_cols = [c for c in X_train.select_dtypes(include=["number"]).columns if c not in datetime_like]
     categorical_cols = X_train.select_dtypes(include=["object", "category"]).columns.tolist()
 
+    # Print training class distribution before resampling
+    train_dist = y_train.value_counts().sort_index()
+    train_pct = (y_train.value_counts(normalize=True).sort_index() * 100).round(3)
+    print("Training class distribution BEFORE resampling:")
+    print({int(k): int(v) for k, v in train_dist.items()})
+    print({int(k): float(v) for k, v in train_pct.items()})
+
+    # Apply SMOTENC only on training split to handle mixed types
+    # Build categorical feature indices relative to X_train columns
+    cat_indices = [X_train.columns.get_loc(c) for c in categorical_cols]
+    smotenc = SMOTENC(categorical_features=cat_indices, random_state=42)
+    X_train_res, y_train_res = smotenc.fit_resample(X_train, y_train)
+
+    # Print class distribution after resampling
+    res_dist = y_train_res.value_counts().sort_index()
+    res_pct = (y_train_res.value_counts(normalize=True).sort_index() * 100).round(3)
+    print("Training class distribution AFTER SMOTENC resampling:")
+    print({int(k): int(v) for k, v in res_dist.items()})
+    print({int(k): float(v) for k, v in res_pct.items()})
+
     preprocessor = build_preprocessor(numeric_cols=numeric_cols, categorical_cols=categorical_cols)
 
     # Build models
@@ -93,10 +114,10 @@ def main():
 
         run_experiment(
             experiment_name=experiment_name,
-            model_name=model_name,
+            model_name=f"{model_name}__smotenc",
             model=model_pipeline,
-            X_train=X_train,
-            y_train=y_train,
+            X_train=X_train_res,
+            y_train=y_train_res,
             X_test=X_test,
             y_test=y_test,
             param_grid=param_grid,

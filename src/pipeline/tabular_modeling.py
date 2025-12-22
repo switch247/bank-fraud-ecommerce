@@ -67,13 +67,23 @@ def split_features_target(
     drop_cols: Iterable[str] | None = None,
     test_size: float = 0.2,
     random_state: int = 42,
+    stratify: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """Split a DataFrame into train/test sets with the target column removed from features."""
+    """Split a DataFrame into train/test sets with the target column removed from features.
+
+    Parameters
+    - target: target column name
+    - drop_cols: columns to drop from features (in addition to target)
+    - stratify: when True, uses y for stratification (useful for imbalanced classes)
+    """
 
     drop_cols = set(drop_cols or [])
     features = df.drop(columns=list(drop_cols | {target}))
     y = df[target]
-    X_train, X_test, y_train, y_test = train_test_split(features, y, test_size=test_size, random_state=random_state)
+    strat = y if stratify else None
+    X_train, X_test, y_train, y_test = train_test_split(
+        features, y, test_size=test_size, random_state=random_state, stratify=strat
+    )
     return X_train, X_test, y_train, y_test
 
 

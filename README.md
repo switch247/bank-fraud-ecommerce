@@ -1,43 +1,95 @@
-# Fraud Detection for E-commerce and Banking Transactions
+# Fraud Detection for Credit Card and E-commerce Transactions
 
-**10 Academy: Artificial Intelligence Mastery - Week 5 & 6 Challenge**
+10 Academy: Artificial Intelligence Mastery — Week 5 & 6 Challenge
 
-## Project Overview
+## Overview
+This repository delivers end-to-end fraud detection for two domains:
+- Credit card transactions (creditcard.csv)
+- E-commerce transactions (Fraud_Data.csv enriched with IpAddress_to_Country.csv)
 
-This project aims to improve the detection of fraud cases for e-commerce transactions and bank credit transactions. As a data scientist at Adey Innovations Inc., the goal is to create accurate and robust fraud detection models that handle the unique challenges of both types of transaction data, including class imbalance, geolocation analysis, and transaction pattern recognition.
+Focus areas include class imbalance, geolocation enrichment, feature engineering, robust model training, and experiment tracking with MLflow.
 
-Key objectives:
-- Analyze and preprocess transaction data.
-- Engineer features to identify fraud patterns.
-- Build and train machine learning models (Logistic Regression, Random Forest, XGBoost/LightGBM).
-- Evaluate models using metrics appropriate for imbalanced data (AUC-PR, F1-Score).
-- Interpret model decisions using SHAP (SHapley Additive exPlanations).
+## Data
+- E-commerce: Fraud_Data.csv (target: `class`)
+- IP mapping: IpAddress_to_Country.csv (for geolocation enrichment)
+- Credit card: creditcard.csv (target: `Class`)
 
-## Business Need
+## Repository Structure (key folders)
+- config/: runtime settings
+- data/raw/, data/processed/: datasets (gitignored in practice)
+- notebooks/: EDA and analysis (see notebooks/01_eda.ipynb)
+- scripts/: training and pipeline entrypoints
+- src/: features, preprocessing, pipeline utilities
+- outputs/: figures, reports, models, predictions
 
-Fraud detection is critical for minimizing financial losses and building trust with customers. A key challenge is balancing security with user experience—minimizing false positives (blocking legitimate users) while maximizing the detection of actual fraud (false negatives). This project focuses on building models that optimize this trade-off.
+## How to Run (Windows / PowerShell)
+Create and use the local venv at ./.venv, then run training scripts.
 
-## Data Sources
+```powershell
+# From repo root
+python -m venv .\.venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
 
-The project utilizes three main datasets:
+# Train credit card models (with MLflow tracking to ./mlruns)
+.\.venv\Scripts\python.exe scripts\train_creditcard_models.py
 
-1.  **Fraud_Data.csv**: E-commerce transaction data.
-    -   Features: `user_id`, `signup_time`, `purchase_time`, `purchase_value`, `device_id`, `source`, `browser`, `sex`, `age`, `ip_address`.
-    -   Target: `class` (1: Fraud, 0: Non-Fraud).
-2.  **IpAddress_to_Country.csv**: Maps IP address ranges to countries.
-    -   Used to enrich `Fraud_Data.csv` with geolocation information.
-3.  **creditcard.csv**: Bank transaction data.
-    -   Features: `Time`, `Amount`, and anonymized PCA features `V1` to `V28`.
-    -   Target: `Class` (1: Fraud, 0: Non-Fraud).
+# Train e-commerce fraud models
+.\.venv\Scripts\python.exe scripts\train_fraud_models.py
 
-**Critical Challenge**: Both datasets are highly imbalanced, requiring specialized techniques like SMOTE or undersampling.
+# Optional quick mode (downsample for speed)
+$env:QUICK="1"; .\.venv\Scripts\python.exe scripts\train_creditcard_models.py --quick
+$env:QUICK="1"; .\.venv\Scripts\python.exe scripts\train_fraud_models.py --quick
 
-## Project Structure
-
+# Inspect experiments locally
+mlflow ui --backend-store-uri .\mlruns
 ```
-├── .vscode/
-├── config/                 # Configuration files
-├── data/
+
+## Results (Credit Card)
+Training was executed with stratified splits and simple grids via MLflow. Summary of observed metrics:
+
+- Logistic Regression
+    - Accuracy: 99.91%
+    - Precision: 82.67%
+    - Recall: 63.27%
+    - F1: 0.7168
+    - ROC AUC: 0.9605
+
+- Decision Tree
+    - Accuracy: 99.95%
+    - Precision: 89.41%
+    - Recall: 77.55%
+    - F1: 0.8306
+    - ROC AUC: 0.9030
+
+- Random Forest (best)
+    - Accuracy: 99.96%
+    - Precision: 94.12%
+    - Recall: 81.63%
+    - F1: 0.8743
+    - ROC AUC: 0.9630
+
+- Gradient Boosting
+    - Accuracy: 99.83%
+    - Precision: 52.94%
+    - Recall: 18.37%
+    - F1: 0.2727
+    - ROC AUC: 0.3469
+
+Model registered: CreditCard_Fraud_Models_best_model (F1 ≈ 0.8743).
+
+## Key Entry Points
+- Credit card training: scripts/train_creditcard_models.py
+- E-commerce training: scripts/train_fraud_models.py
+- Experiment tracking helpers: src/pipeline/experiment_tracking.py
+- Preprocessing & model builders: src/pipeline/tabular_modeling.py
+- E-commerce feature engineering: src/features/fraud_features.py
+
+## Notes
+- Figures are saved under outputs/figures/ by helper Plotter.
+- EDA cells for credit card and e-commerce are in notebooks/01_eda.ipynb.
+- Both training scripts use only project helpers (src/features, src/pipeline).
 │   ├── raw/                # Original datasets
 │   └── processed/          # Cleaned and feature-engineered data
 ├── docs/                   # Documentation

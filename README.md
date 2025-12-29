@@ -79,6 +79,42 @@ Training was executed with stratified splits and simple grids via MLflow. Summar
 
 Model registered: CreditCard_Fraud_Models_best_model (F1 ≈ 0.8743).
 
+## Results (Fraud_Data)
+
+Training was executed with stratified splits and simple grids via MLflow. Summary of observed metrics:
+
+- Logistic Regression
+    - Accuracy: 99.91%
+    - Precision: 82.67%
+    - Recall: 63.27%
+    - F1: 0.7168
+    - ROC AUC: 0.9605
+
+- Decision Tree
+    - Accuracy: 99.95%
+    - Precision: 89.41%
+    - Recall: 77.55%
+    - F1: 0.8306
+    - ROC AUC: 0.9030
+
+- Random Forest (best)
+    - Accuracy: 99.96%
+    - Precision: 94.12%
+    - Recall: 81.63%
+    - F1: 0.8743
+    - ROC AUC: 0.9630
+
+- Gradient Boosting
+    - Accuracy: 99.83%
+    - Precision: 52.94%
+    - Recall: 18.37%
+    - F1: 0.2727
+    - ROC AUC: 0.3469
+
+Model registered: Ecommerce_Fraud_Models_best_model (F1 ≈ 0.8743).
+
+
+
 ## Key Entry Points
 - Credit card training: scripts/train_creditcard_models.py
 - E-commerce training: scripts/train_fraud_models.py

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import pandas as pd
 import mlflow
-from imblearn.over_sampling import SMOTENC
+from imblearn.under_sampling import RandomUnderSampler
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -75,16 +75,14 @@ def main():
     print({int(k): int(v) for k, v in train_dist.items()})
     print({int(k): float(v) for k, v in train_pct.items()})
 
-    # Apply SMOTENC only on training split to handle mixed types
-    # Build categorical feature indices relative to X_train columns
-    cat_indices = [X_train.columns.get_loc(c) for c in categorical_cols]
-    smotenc = SMOTENC(categorical_features=cat_indices, random_state=42)
-    X_train_res, y_train_res = smotenc.fit_resample(X_train, y_train)
+    # Apply RandomUnderSampler to avoid memory blow-up with high-cardinality categoricals
+    rus = RandomUnderSampler(random_state=42)
+    X_train_res, y_train_res = rus.fit_resample(X_train, y_train)
 
     # Print class distribution after resampling
     res_dist = y_train_res.value_counts().sort_index()
     res_pct = (y_train_res.value_counts(normalize=True).sort_index() * 100).round(3)
-    print("Training class distribution AFTER SMOTENC resampling:")
+    print("Training class distribution AFTER RandomUnderSampler:")
     print({int(k): int(v) for k, v in res_dist.items()})
     print({int(k): float(v) for k, v in res_pct.items()})
 
@@ -114,7 +112,7 @@ def main():
 
         run_experiment(
             experiment_name=experiment_name,
-            model_name=f"{model_name}__smotenc",
+            model_name=f"{model_name}__rus",
             model=model_pipeline,
             X_train=X_train_res,
             y_train=y_train_res,

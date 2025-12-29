@@ -14,11 +14,9 @@ htmlcov/
 .pytest_cache/
 .mypy_cache/
 .idea/
-/data
 /.dvc*
 !/.dvc/config
 !/.dvc/.gitignore
-/*.csv
 /.ipynb_checkpoints/
 walkthrough.md*
 /experiments/
@@ -27,3 +25,5 @@ walkthrough.md*
 /mlruns/
 /outputs/
 .DS_Store
+/*.csv
+/*.zip

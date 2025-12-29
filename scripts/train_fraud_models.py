@@ -11,7 +11,13 @@ sys.path.append(str(PROJECT_ROOT))
 
 from src.features.fraud_features import merge_ip_country, add_time_features, add_transaction_frequency
 from src.pipeline.tabular_modeling import build_preprocessor, build_classification_models, split_features_target
-from src.pipeline.experiment_tracking import run_experiment, register_best_model
+from src.pipeline.experiment_tracking import (
+    run_experiment, 
+    register_best_model,
+    run_cross_validation,
+    compare_models,
+    select_best_model
+)
 
 
 def _prepare_fraud_df(df: pd.DataFrame, ip_country_df: pd.DataFrame | None = None) -> pd.DataFrame:
@@ -95,6 +101,12 @@ def main():
     experiment_name = "Ecommerce_Fraud_Models"
     mlflow.set_tracking_uri("file:./mlruns")
 
+    # Check if cross-validation mode is enabled
+    use_cv = "--use-cv" in sys.argv
+    
+    # Store results for comparison
+    all_model_results = []
+
     for model_name, model_pipeline in models.items():
         print(f"Running experiment for {model_name}...")
 
@@ -110,19 +122,94 @@ def main():
         elif "xgb" in model_name:
             param_grid = {"model__n_estimators": [200, 400], "model__learning_rate": [0.05, 0.1]}
 
-        run_experiment(
-            experiment_name=experiment_name,
-            model_name=f"{model_name}__rus",
-            model=model_pipeline,
-            X_train=X_train_res,
-            y_train=y_train_res,
-            X_test=X_test,
-            y_test=y_test,
-            param_grid=param_grid,
-            search_type="grid",
-        )
+        if use_cv:
+            # Cross-validation mode
+            print(f"  Running 5-fold cross-validation for {model_name}...")
+            cv_results = run_cross_validation(
+                model=model_pipeline,
+                X=X_train_res,
+                y=y_train_res,
+                cv=5,
+                random_state=42
+            )
+            
+            # Log CV results to MLflow
+            with mlflow.start_run(run_name=f"{model_name}__rus__cv"):
+                mlflow.log_param("cv_folds", cv_results['n_folds'])
+                mlflow.log_param("resampling", "RandomUnderSampler")
+                
+                # Log aggregated metrics
+                for metric, stats in cv_results['aggregated'].items():
+                    mlflow.log_metric(f"{metric}_mean", stats['mean'])
+                    mlflow.log_metric(f"{metric}_std", stats['std'])
+                
+                # Log individual fold results
+                for fold_idx, fold_metrics in enumerate(cv_results['fold_results']):
+                    for metric, value in fold_metrics.items():
+                        mlflow.log_metric(f"fold_{fold_idx}_{metric}", value)
+                
+                mlflow.sklearn.log_model(model_pipeline, "model")
+            
+            print(f"  CV Results for {model_name}:")
+            for metric, stats in cv_results['aggregated'].items():
+                print(f"    {metric}: {stats['mean']:.4f} ± {stats['std']:.4f}")
+            
+            all_model_results.append({
+                'model_name': f"{model_name}__rus",
+                'metrics': cv_results,
+                'is_cv': True
+            })
+        else:
+            # Standard train/test mode
+            trained_model, metrics = run_experiment(
+                experiment_name=experiment_name,
+                model_name=f"{model_name}__rus",
+                model=model_pipeline,
+                X_train=X_train_res,
+                y_train=y_train_res,
+                X_test=X_test,
+                y_test=y_test,
+                param_grid=param_grid,
+                search_type="grid",
+            )
+            
+            all_model_results.append({
+                'model_name': f"{model_name}__rus",
+                'metrics': metrics,
+                'is_cv': False
+            })
 
-    print("Registering best model by F1...")
+    # Model comparison and selection
+    print("\n" + "="*80)
+    print("MODEL COMPARISON AND SELECTION")
+    print("="*80)
+    
+    comparison_df = compare_models(all_model_results)
+    print("\nModel Comparison:")
+    print(comparison_df.to_string(index=False))
+    
+    # Save comparison report
+    output_dir = PROJECT_ROOT / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    comparison_path = output_dir / "model_comparison_fraud.csv"
+    comparison_df.to_csv(comparison_path, index=False)
+    print(f"\nComparison report saved to: {comparison_path}")
+    
+    # Select best model with interpretability consideration
+    selected_model, justification = select_best_model(
+        all_model_results,
+        primary_metric='f1',
+        performance_threshold=0.02
+    )
+    
+    print("\n" + "-"*80)
+    print("FINAL MODEL SELECTION")
+    print("-"*80)
+    print(f"Selected Model: {selected_model}")
+    print(f"Justification: {justification}")
+    print("-"*80)
+
+    print("\nRegistering best model by F1...")
     register_best_model(experiment_name, metric="f1_score")
 
 

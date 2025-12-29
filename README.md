@@ -46,6 +46,69 @@ $env:QUICK="1"; .\.venv\Scripts\python.exe scripts\train_fraud_models.py --quick
 mlflow ui --backend-store-uri .\mlruns
 ```
 
+## Task 2b: Cross-Validation and Model Selection
+
+### Cross-Validation with Aggregated Metrics
+Both training scripts support **5-fold stratified cross-validation** with the `--use-cv` flag. This provides robust performance estimates with mean ± standard deviation for all metrics.
+
+```powershell
+# Run with cross-validation (can combine with --quick for faster iteration)
+.\.venv\Scripts\python.exe scripts\train_creditcard_models.py --use-cv --quick
+.\.venv\Scripts\python.exe scripts\train_fraud_models.py --use-cv --quick
+
+# Full dataset with CV (takes longer)
+.\.venv\Scripts\python.exe scripts\train_creditcard_models.py --use-cv
+.\.venv\Scripts\python.exe scripts\train_fraud_models.py --use-cv
+```
+
+**Cross-validation features:**
+- Stratified 5-fold CV maintains class distribution in each fold
+- Computes mean and standard deviation for: accuracy, precision, recall, F1, ROC-AUC
+- Logs individual fold results and aggregated statistics to MLflow
+- Provides more reliable performance estimates than single train/test split
+
+### Model Comparison and Selection
+After training, both scripts automatically:
+
+1. **Generate comparison reports** saved to `outputs/`:
+   - `model_comparison_creditcard.csv` - Credit card models comparison
+   - `model_comparison_fraud.csv` - E-commerce fraud models comparison
+
+2. **Select best model** using intelligent criteria:
+   - **Primary metric**: F1-score (optimal for imbalanced classification)
+   - **Interpretability consideration**: When models perform similarly (within 2% F1), selects the more interpretable model
+   - **Interpretability ranking**: Logistic Regression (5) > Decision Tree (4) > Random Forest (3) > Gradient Boosting (2) > XGBoost (1)
+
+**Example output:**
+```
+MODEL COMPARISON AND SELECTION
+================================================================================
+
+Model Comparison:
+     model_name  accuracy  precision    recall        f1   roc_auc
+random_forest__smote    0.9996     0.9412    0.8163    0.8743    0.9630
+decision_tree__smote    0.9995     0.8941    0.7755    0.8306    0.9030
+log_reg__smote          0.9991     0.8267    0.6327    0.7168    0.9605
+
+--------------------------------------------------------------------------------
+FINAL MODEL SELECTION
+--------------------------------------------------------------------------------
+Selected Model: random_forest__smote
+Justification: Selected 'random_forest__smote' as it has the best f1 score of 0.8743
+--------------------------------------------------------------------------------
+```
+
+### Viewing Results
+```powershell
+# View comparison reports
+cat data\processed\model_comparison_creditcard.csv
+cat data\processed\model_comparison_fraud.csv
+
+# Launch MLflow UI to explore all experiments
+mlflow ui --backend-store-uri .\mlruns
+# Then open http://localhost:5000 in your browser
+```
+
 ## Results (Credit Card)
 Training was executed with stratified splits and simple grids via MLflow. Summary of observed metrics:
 

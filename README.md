@@ -1,4 +1,225 @@
+
+## How to Run (Windows / PowerShell)
+
+### Step-by-Step Setup & Run Instructions
+
+#### 1. Clone the Repository
+```powershell
+git clone https://github.com/switch247/bank-fraud-ecommerce.git
+cd bank-fraud-ecommerce
+```
+
+#### 2. Set Up Python Environment
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+```
+
+#### 3. (Optional) Use Docker
+```powershell
+docker build -t bank-fraud .
+docker-compose up
+```
+
+#### 4. Configure Settings
+Edit files in `config/` (e.g., `settings.py`, `logging.yaml`) as needed for your environment.
+
+#### 5. Run Feature Engineering
+```powershell
+python scripts/build_features.py
+```
+
+#### 6. Train Models
+For credit card fraud:
+```powershell
+python scripts/train_creditcard_models.py
+```
+For e-commerce fraud:
+```powershell
+python scripts/train_fraud_models.py
+```
+
+#### 7. Evaluate Results
+Reports and model comparisons are saved in `outputs/` and `data/processed/`.
+
+#### 8. Run Tests
+```powershell
+pytest tests/
+```
+
+#### 9. Experiment Tracking
+To launch the MLflow UI:
+```powershell
+mlflow ui --backend-store-uri .\mlruns
+# Then open http://localhost:5000 in your browser
+```
+
+
+# Fraud Detection for E-commerce and Bank Transactions
+
+## Business Need
+
+Adey Innovations Inc. is a leader in financial technology, providing solutions for e-commerce and banking. The goal of this project is to improve the detection of fraud cases for both e-commerce and bank credit transactions. By leveraging advanced machine learning and geolocation analysis, we aim to build robust models that enhance transaction security, reduce financial losses, and build trust with customers and financial institutions.
+
+Fraud detection must balance security and user experience: false positives can alienate customers, while false negatives lead to direct losses. Our models are evaluated not just on accuracy, but on their ability to balance these competing costs. Real-time monitoring and explainability are also key for business adoption.
+
+## Data and Features
+
+We use three main datasets:
+
+- **Fraud_Data.csv**: E-commerce transaction data with features such as user_id, signup_time, purchase_time, purchase_value, device_id, source, browser, sex, age, ip_address, and the target `class` (1 = fraud, 0 = not fraud). Highly imbalanced.
+- **IpAddress_to_Country.csv**: Maps IP address ranges to countries for geolocation enrichment.
+- **creditcard.csv**: Bank transaction data with anonymized features (V1-V28), Amount, Time, and the target `Class` (1 = fraud, 0 = not fraud). Also highly imbalanced.
+
+Key feature engineering includes:
+- Transaction frequency and velocity
+- Time-based features (hour_of_day, day_of_week, time_since_signup)
+- Geolocation integration (IP to country)
+- Handling class imbalance (SMOTE, undersampling)
+
+See the `data/` folder for raw and processed files. Sensitive data should be handled per your organization’s policies.
+
+## Learning Outcomes
+
+**Skills:**
+- Data cleaning, preprocessing, and merging
+- Feature engineering from raw data
+- Handling highly imbalanced datasets
+- Model training and evaluation with AUC-PR, F1-Score
+- Model explainability with SHAP
+
+**Knowledge:**
+- Business and technical challenges of fraud detection
+- Importance of explainability (XAI)
+- Model selection based on metrics and business context
+
+**Behaviors:**
+- Business-centric problem solving
+- Systematic, organized workflow
+
+**Communication:**
+- Reporting on complex statistical issues
+
+## Project Structure
+
+```
+fraud-detection/
+├── data/
+│   ├── raw/                # Original datasets
+│   └── processed/          # Cleaned and feature-engineered data
+├── notebooks/              # EDA, feature engineering, modeling, explainability
+├── src/                    # Source code
+├── tests/                  # Unit tests
+├── models/                 # Saved model artifacts
+├── scripts/                # Pipeline scripts
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
+
+## Step-by-Step Setup & Run Instructions
+
+### 1. Clone the Repository
+```sh
+git clone https://github.com/switch247/bank-fraud-ecommerce.git
+cd bank-fraud-ecommerce
+```
+
+### 2. Set Up Python Environment
+```sh
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
+pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+```
+
+### 3. (Optional) Use Docker
+```sh
+docker build -t bank-fraud .
+docker-compose up
+```
+
+### 4. Configure Settings
+Edit files in `config/` (e.g., `settings.py`, `logging.yaml`) as needed.
+
+### 5. Data Preprocessing & Feature Engineering
+```sh
+python scripts/build_features.py
+```
+
+### 6. Model Training
+For credit card fraud:
+```sh
+python scripts/train_creditcard_models.py
+```
+For e-commerce fraud:
+```sh
+python scripts/train_fraud_models.py
+```
+
+### 7. Model Evaluation & Reporting
+Reports and model comparisons are saved in `outputs/` and `data/processed/`.
+
+### 8. Run Tests
+```sh
+pytest tests/
+```
+
+### 9. Experiment Tracking
+To launch the MLflow UI:
+```sh
+mlflow ui --backend-store-uri ./mlruns
+# Then open http://localhost:5000 in your browser
+```
+
+## Key Tasks
+
+### Task 1: Data Analysis and Preprocessing
+- Handle missing values and duplicates
+- EDA: distributions, relationships, class imbalance
+- Geolocation integration (IP to country)
+- Feature engineering (frequency, time-based, etc.)
+- Normalize/scale, encode categorical features
+- Handle class imbalance (SMOTE/undersampling)
+
+### Task 2: Model Building and Training
+- Stratified train-test split
+- Baseline: Logistic Regression
+- Ensemble: Random Forest, XGBoost, or LightGBM
+- Hyperparameter tuning
+- Stratified K-Fold cross-validation
+- Model comparison and selection (performance + interpretability)
+
+### Task 3: Model Explainability
+- Feature importance (built-in and SHAP)
+- SHAP summary and force plots
+- Business recommendations based on insights
+
+## References
+- Kaggle: Credit Card Fraud Dataset
+- Kaggle: IEEE Fraud Detection Competition
+- Kaggle: Fraud E-commerce Dataset
+- imbalanced-learn Documentation
+- scikit-learn: Precision-Recall Curves
+- GeeksforGeeks: IP Address to Integer Conversion
+- pandas.merge_asof Documentation
+- Analytics Vidhya, DataCamp, IBM, and others (see project docs)
 # Fraud Detection for Credit Card and E-commerce Transactions
+
+## Business Context
+
+Online payment fraud is a major risk for banks and e-commerce platforms, leading to financial losses and eroding customer trust. This project addresses the detection of fraudulent transactions using machine learning, aiming to support real-time prevention and compliance with regulatory standards. The models and pipelines here are designed to help organizations identify suspicious activity, reduce false positives, and improve operational efficiency.
+
+## Data Source Notes
+
+- **creditcard.csv**: Public dataset of anonymized credit card transactions, labeled for fraud, from [Kaggle Credit Card Fraud Detection](https://www.kaggle.com/mlg-ulb/creditcardfraud).
+- **Fraud_Data.csv**: Synthetic e-commerce transaction data with fraud labels.
+- **IpAddress_to_Country.csv**: Maps IP addresses to countries, enabling geolocation-based features.
+- **Processed Data**: The `data/processed/` folder contains cleaned and feature-engineered datasets for modeling and evaluation.
+
+See the `data/` folder for all raw and processed files. Sensitive or proprietary data should be handled according to your organization’s policies.
 
 10 Academy: Artificial Intelligence Mastery — Week 5 & 6 Challenge
 
@@ -23,7 +244,63 @@ Focus areas include class imbalance, geolocation enrichment, feature engineering
 - outputs/: figures, reports, models, predictions
 
 ## How to Run (Windows / PowerShell)
-Create and use the local venv at ./.venv, then run training scripts.
+
+### Step-by-Step Setup & Run Instructions
+
+#### 1. Clone the Repository
+```powershell
+git clone https://github.com/switch247/bank-fraud-ecommerce.git
+cd bank-fraud-ecommerce
+```
+
+#### 2. Set Up Python Environment
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+```
+
+#### 3. (Optional) Use Docker
+```powershell
+docker build -t bank-fraud .
+docker-compose up
+```
+
+#### 4. Configure Settings
+Edit files in `config/` (e.g., `settings.py`, `logging.yaml`) as needed for your environment.
+
+#### 5. Run Feature Engineering
+```powershell
+python scripts/build_features.py
+```
+
+#### 6. Train Models
+For credit card fraud:
+```powershell
+python scripts/train_creditcard_models.py
+```
+For e-commerce fraud:
+```powershell
+python scripts/train_fraud_models.py
+```
+
+#### 7. Evaluate Results
+
+### 7. Model Evaluation & Reporting
+Reports and model comparisons are saved in `outputs/` and `data/processed/`.
+
+#### 8. Run Tests
+```powershell
+pytest tests/
+```
+
+#### 9. Experiment Tracking
+To launch the MLflow UI:
+```powershell
+mlflow ui --backend-store-uri .\mlruns
+# Then open http://localhost:5000 in your browser
+```
 
 ```powershell
 # From repo root

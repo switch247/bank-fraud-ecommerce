@@ -174,6 +174,15 @@ mlflow ui --backend-store-uri ./mlruns
 # Then open http://localhost:5000 in your browser
 ```
 
+
+## Key Implementation Entry Points
+
+- Credit card training: scripts/train_creditcard_models.py
+- E-commerce training: scripts/train_fraud_models.py
+- Experiment tracking helpers: src/pipeline/experiment_tracking.py
+- Preprocessing & model builders: src/pipeline/tabular_modeling.py
+- E-commerce feature engineering: src/features/fraud_features.py
+
 ## Key Tasks
 
 ### Task 1: Data Analysis and Preprocessing

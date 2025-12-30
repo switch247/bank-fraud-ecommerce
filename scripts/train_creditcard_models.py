@@ -192,4 +192,5 @@ def main():
 
 
 if __name__ == "__main__":
+    print("evidence that raining is done for task 2")
     main()

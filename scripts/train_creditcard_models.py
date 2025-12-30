@@ -20,7 +20,7 @@ from src.pipeline.experiment_tracking import (
 
 
 def main():
-    raw_path = PROJECT_ROOT / "data" / "raw" / "creditcard.csv"
+    raw_path = PROJECT_ROOT / "data" / "processed" / "creditcard_processed.csv"
     if not raw_path.exists():
         print(f"Data file not found at {raw_path}")
         return

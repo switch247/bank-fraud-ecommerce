@@ -149,3 +149,51 @@ class Plotter:
             bw_adjust=bw_adjust,
         )
         self._finalize(title or f"Density by {class_col}: {x}", xlabel or x, ylabel or "Density")
+
+    def plot_roc_curve(self, y_true, y_proba, title="ROC Curve"):
+        """Plot and save the ROC curve."""
+        from sklearn.metrics import roc_curve, auc
+        
+        fpr, tpr, _ = roc_curve(y_true, y_proba)
+        roc_auc = auc(fpr, tpr)
+
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.legend(loc="lower right")
+        self._finalize(title, "False Positive Rate", "True Positive Rate")
+
+    def plot_confusion_matrix(self, y_true, y_pred, title="Confusion Matrix"):
+        """Plot and save the confusion matrix."""
+        from sklearn.metrics import confusion_matrix
+        
+        cm = confusion_matrix(y_true, y_pred)
+        plt.figure()
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        self._finalize(title, "Predicted Label", "True Label")
+
+    def plot_roc_curve(self, y_true, y_proba, title="ROC Curve"):
+        """Plot and save the ROC curve."""
+        from sklearn.metrics import roc_curve, auc
+        
+        fpr, tpr, _ = roc_curve(y_true, y_proba)
+        roc_auc = auc(fpr, tpr)
+
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.legend(loc="lower right")
+        self._finalize(title, "False Positive Rate", "True Positive Rate")
+
+    def plot_confusion_matrix(self, y_true, y_pred, title="Confusion Matrix"):
+        """Plot and save the confusion matrix."""
+        from sklearn.metrics import confusion_matrix
+        
+        cm = confusion_matrix(y_true, y_pred)
+        plt.figure()
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        self._finalize(title, "Predicted Label", "True Label")
